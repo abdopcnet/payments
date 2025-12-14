@@ -6,7 +6,7 @@ frappe.ui.form.on("Code Payment Gateways", {
     frm.set_query("student", function () {
       return {
         query:
-          "payments.payments.payment_gateways.doctype.code_payment_gateways.code_payment_gateways.get_students",
+          "payments.payment_gateways.doctype.code_payment_gateways.code_payment_gateways.get_students",
       };
     });
   },
