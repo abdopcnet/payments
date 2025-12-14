@@ -1,0 +1,144 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{%- block page_content -%}
+<div class='page-card'>
+	<div class='page-card-head'>
+		<span class='indicator blue'>
+			{{ _("Manual Payment Authorization") }}</span>
+	</div>
+	
+	<div class="manual-payment-info" style="margin: 20px 0;">
+		<h4>{{ _("Payment Details") }}</h4>
+		<p><strong>{{ _("Amount") }}:</strong> {{ amount }} {{ currency }}</p>
+		<p><strong>{{ _("Authorization Code") }}:</strong> <code style="font-size: 18px; font-weight: bold; color: #2490EF;">{{ code }}</code></p>
+		<p class="text-muted" style="font-size: 12px;">{{ _("Use this code to authorize the payment") }}</p>
+	</div>
+	
+	<div class="manual-payment-form">
+		{% if code_gateway_enabled and user_codes %}
+		<div class="alert alert-info" style="margin-bottom: 15px;">
+			<strong>{{ _("Your Available Codes") }}:</strong>
+			<ul style="margin: 10px 0; padding-left: 20px;">
+				{% for user_code in user_codes %}
+				<li>{{ user_code.code }} - {{ user_code.amount }} {{ currency }}</li>
+				{% endfor %}
+			</ul>
+		</div>
+		{% endif %}
+		
+		<div class="form-group">
+			<label for="payment-code">{{ _("Enter Authorization Code") }}</label>
+			<input 
+				type="text" 
+				class="form-control" 
+				id="payment-code" 
+				placeholder="{{ _('Enter code') }}" 
+				style="text-transform: uppercase; font-size: 16px;"
+			>
+			{% if code_gateway_enabled %}
+			<small class="text-muted">{{ _("Enter the code assigned to your account") }}</small>
+			{% endif %}
+		</div>
+		<button 
+			class="btn btn-primary btn-lg" 
+			id="confirm-payment"
+			style="width: 100%; margin-top: 10px;"
+		>
+			{{ _("Confirm Payment") }}
+		</button>
+		<div id="error-message" class="alert alert-danger" style="display: none; margin-top: 15px;"></div>
+		<div id="success-message" class="alert alert-success" style="display: none; margin-top: 15px;"></div>
+	</div>
+</div>
+
+<style>
+.hero-and-content {
+	background-color: #f5f7fa;
+}
+{% include "templates/styles/card_style.css" %}
+
+.manual-payment-info code {
+	background: #f0f4f7;
+	padding: 8px 12px;
+	border-radius: 4px;
+	display: inline-block;
+	margin: 5px 0;
+}
+</style>
+
+<script>
+frappe.ready(function() {
+	const token = "{{ token }}";
+	const expectedCode = "{{ code }}";
+	const codeGatewayEnabled = {{ "true" if code_gateway_enabled else "false" }};
+	
+	// Auto-fill code only if not using code gateway or for testing
+	if (!codeGatewayEnabled && expectedCode) {
+		document.getElementById("payment-code").value = expectedCode;
+	}
+	
+	document.getElementById("confirm-payment").addEventListener("click", function() {
+		const enteredCode = document.getElementById("payment-code").value.toUpperCase().trim();
+		const errorDiv = document.getElementById("error-message");
+		const successDiv = document.getElementById("success-message");
+		
+		// Hide previous messages
+		errorDiv.style.display = "none";
+		successDiv.style.display = "none";
+		
+		if (!enteredCode) {
+			errorDiv.textContent = "{{ _('Please enter authorization code') }}";
+			errorDiv.style.display = "block";
+			return;
+		}
+		
+		// Disable button
+		this.disabled = true;
+		this.textContent = "{{ _('Processing...') }}";
+		
+		// Confirm payment
+		frappe.call({
+			method: "payments.templates.pages.manual_payment.confirm_manual_payment",
+			args: {
+				token: token,
+				code: enteredCode
+			},
+			callback: function(r) {
+				if (r.message && r.message.success) {
+					successDiv.textContent = r.message.message || "{{ _('Payment confirmed successfully! Redirecting...') }}";
+					successDiv.style.display = "block";
+					
+					// Redirect after short delay
+					setTimeout(function() {
+						window.location.href = r.message.redirect;
+					}, 1000);
+				} else {
+					errorDiv.textContent = r.message.message || "{{ _('Payment confirmation failed') }}";
+					errorDiv.style.display = "block";
+					document.getElementById("confirm-payment").disabled = false;
+					document.getElementById("confirm-payment").textContent = "{{ _('Confirm Payment') }}";
+				}
+			},
+			error: function(r) {
+				errorDiv.textContent = r.message && r.message.message 
+					? r.message.message 
+					: "{{ _('An error occurred. Please try again.') }}";
+				errorDiv.style.display = "block";
+				document.getElementById("confirm-payment").disabled = false;
+				document.getElementById("confirm-payment").textContent = "{{ _('Confirm Payment') }}";
+			}
+		});
+	});
+	
+	// Allow Enter key to submit
+	document.getElementById("payment-code").addEventListener("keypress", function(e) {
+		if (e.key === "Enter") {
+			document.getElementById("confirm-payment").click();
+		}
+	});
+});
+</script>
+
+{% endblock %}
