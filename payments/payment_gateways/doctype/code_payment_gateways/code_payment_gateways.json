@@ -29,7 +29,6 @@
    "fieldname": "student",
    "fieldtype": "Link",
    "label": "Student",
-   "link_filters": "[[\"User\",\"role\",\"=\",\"LMS Student\"]]",
    "options": "User"
   },
   {
