@@ -6,7 +6,12 @@
  "engine": "InnoDB",
  "field_order": [
   "enabled",
-  "code_payment_gateways_child"
+  "code",
+  "student",
+  "free_code",
+  "code_amount",
+  "code_used_amount",
+  "code_remaining_amount"
  ],
  "fields": [
   {
@@ -16,16 +21,43 @@
    "label": "Enabled"
   },
   {
-   "fieldname": "code_payment_gateways_child",
-   "fieldtype": "Table",
-   "label": "Code Payment Gateways Child",
-   "options": "Code Payment Gateways Child"
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "label": "Code"
+  },
+  {
+   "fieldname": "student",
+   "fieldtype": "Link",
+   "label": "Student",
+   "link_filters": "[[\"User\",\"role\",\"=\",\"LMS Student\"]]",
+   "options": "User"
+  },
+  {
+   "default": "0",
+   "fieldname": "free_code",
+   "fieldtype": "Check",
+   "label": "Free Code"
+  },
+  {
+   "fieldname": "code_amount",
+   "fieldtype": "Currency",
+   "label": "Code Amount"
+  },
+  {
+   "fieldname": "code_used_amount",
+   "fieldtype": "Currency",
+   "label": "Code Used Amount"
+  },
+  {
+   "fieldname": "code_remaining_amount",
+   "fieldtype": "Currency",
+   "label": "Code Remaining Amount"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-14 03:29:57.092999",
+ "modified": "2025-12-14 11:21:40.594687",
  "modified_by": "Administrator",
  "module": "Payment Gateways",
  "name": "Code Payment Gateways",
