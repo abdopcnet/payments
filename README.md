@@ -1,5 +1,8 @@
 # Payments
 
+![Version](https://img.shields.io/badge/version-14.12.2025-blue)
+
+
 A payments app for frappe.
 
 ## Installation
