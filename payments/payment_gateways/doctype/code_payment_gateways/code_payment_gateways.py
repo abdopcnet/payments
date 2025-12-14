@@ -54,3 +54,48 @@ class CodePaymentGateways(Document):
 
         url = get_url(f"/manual_payment?{urlencode(params)}")
         return url
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_students(doctype, txt, searchfield, start, page_len, filters):
+    """Filter User link field to show only users with 'LMS Student' role
+
+    Pattern based on frappe/core/doctype/role/role.py:get_users()
+    and frappe/core/doctype/user/user.py:user_query()
+    """
+    # Get user names that have 'LMS Student' role (from Has Role child table)
+    student_users = frappe.get_all(
+        "Has Role",
+        filters={"role": "LMS Student", "parenttype": "User"},
+        fields=["parent"],
+        pluck="parent"
+    )
+
+    if not student_users:
+        return []
+
+    # Build filters for User query
+    list_filters = {
+        "enabled": 1,
+        "docstatus": ["<", 2],
+        "name": ["in", student_users]
+    }
+
+    # Build search filters
+    or_filters = [[searchfield, "like", f"%{txt}%"]]
+    if "name" in searchfield:
+        or_filters += [[field, "like", f"%{txt}%"]
+                       for field in ("first_name", "middle_name", "last_name")]
+
+    # Get users matching the filters
+    return frappe.get_list(
+        "User",
+        filters=list_filters,
+        fields=["name", "full_name"],
+        limit_start=start,
+        limit_page_length=page_len,
+        order_by="name asc",
+        or_filters=or_filters,
+        as_list=True,
+    )
