@@ -1,144 +1,594 @@
-{% extends "templates/web.html" %}
-
-{% block title %}{{ title }}{% endblock %}
-
+{% extends "templates/web.html" %} {% block title %}{{ title }}{% endblock %}
 {%- block page_content -%}
-<div class='page-card'>
-	<div class='page-card-head'>
-		<span class='indicator blue'>
-			{{ _("Manual Payment Authorization") }}</span>
-	</div>
-	
-	<div class="manual-payment-info" style="margin: 20px 0;">
-		<h4>{{ _("Payment Details") }}</h4>
-		<p><strong>{{ _("Amount") }}:</strong> {{ amount }} {{ currency }}</p>
-		<p><strong>{{ _("Authorization Code") }}:</strong> <code style="font-size: 18px; font-weight: bold; color: #2490EF;">{{ code }}</code></p>
-		<p class="text-muted" style="font-size: 12px;">{{ _("Use this code to authorize the payment") }}</p>
-	</div>
-	
-	<div class="manual-payment-form">
-		{% if code_gateway_enabled and user_codes %}
-		<div class="alert alert-info" style="margin-bottom: 15px;">
-			<strong>{{ _("Your Available Codes") }}:</strong>
-			<ul style="margin: 10px 0; padding-left: 20px;">
-				{% for user_code in user_codes %}
-				<li>{{ user_code.code }} - {{ user_code.amount }} {{ currency }}</li>
-				{% endfor %}
-			</ul>
-		</div>
-		{% endif %}
-		
-		<div class="form-group">
-			<label for="payment-code">{{ _("Enter Authorization Code") }}</label>
-			<input 
-				type="text" 
-				class="form-control" 
-				id="payment-code" 
-				placeholder="{{ _('Enter code') }}" 
-				style="text-transform: uppercase; font-size: 16px;"
-			>
-			{% if code_gateway_enabled %}
-			<small class="text-muted">{{ _("Enter the code assigned to your account") }}</small>
-			{% endif %}
-		</div>
-		<button 
-			class="btn btn-primary btn-lg" 
-			id="confirm-payment"
-			style="width: 100%; margin-top: 10px;"
-		>
-			{{ _("Confirm Payment") }}
-		</button>
-		<div id="error-message" class="alert alert-danger" style="display: none; margin-top: 15px;"></div>
-		<div id="success-message" class="alert alert-success" style="display: none; margin-top: 15px;"></div>
-	</div>
+<div class="page-card">
+  <div class="page-card-head">
+    <span class="indicator blue"> {{ _("Manual Payment Authorization") }}</span>
+  </div>
+
+  <div class="manual-payment-info">
+    <h4>{{ _("Payment Details") }}</h4>
+    <div class="payment-amount-card">
+      <div class="amount-label">{{ _("Amount to Pay") }}</div>
+      <div class="amount-value">
+        {{ amount }} <span class="currency">{{ currency }}</span>
+      </div>
+    </div>
+
+    <div class="authorization-code-card">
+      <div class="code-header">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>{{ _("Authorization Code") }}</span>
+      </div>
+      <div class="code-display">
+        <span class="code-value">{{ code }}</span>
+        <button class="copy-btn" onclick="copyCode('{{ code }}')">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path
+              d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+            ></path>
+          </svg>
+        </button>
+      </div>
+      <p class="code-hint">{{ _("Use this code to authorize the payment") }}</p>
+    </div>
+  </div>
+
+  <div class="manual-payment-form">
+    {% if code_gateway_enabled and user_codes %}
+    <div class="user-codes-section">
+      <div class="codes-header">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <strong>{{ _("Your Available Codes") }}</strong>
+      </div>
+      <div class="codes-list">
+        {% for user_code in user_codes %}
+        <div class="code-item">
+          <div class="code-item-code">{{ user_code.code }}</div>
+          <div class="code-item-details">
+            {% if user_code.free_code %}
+            <span class="badge badge-free">{{ _("Free Code") }}</span>
+            {% else %}
+            <span class="code-amount"
+              >{{ user_code.amount }} {{ currency }}</span
+            >
+            {% if user_code.remaining_amount is not none %}
+            <span class="code-remaining"
+              >{{ _("Remaining") }}: {{ user_code.remaining_amount }} {{
+              currency }}</span
+            >
+            {% endif %} {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+      <label for="payment-code">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path
+            d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
+          ></path>
+        </svg>
+        {{ _("Enter Authorization Code") }}
+      </label>
+      <div class="input-with-icon">
+        <input
+          type="text"
+          class="form-control code-input"
+          id="payment-code"
+          placeholder="{{ _('Enter code') }}"
+        />
+        <div class="input-icon">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+      </div>
+      {% if code_gateway_enabled %}
+      <small class="input-hint"
+        >{{ _("Enter the code assigned to your account") }}</small
+      >
+      {% endif %}
+    </div>
+
+    <button class="btn-confirm" id="confirm-payment">
+      <span class="btn-text">{{ _("Confirm Payment") }}</span>
+      <svg
+        class="btn-icon"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
+
+    <div id="error-message" class="message-box error-box"></div>
+    <div id="success-message" class="message-box success-box"></div>
+  </div>
 </div>
 
 <style>
-.hero-and-content {
-	background-color: #f5f7fa;
-}
-{% include "templates/styles/card_style.css" %}
+  .hero-and-content {
+    background-color: #f5f7fa;
+  }
+  {% include "templates/styles/card_style.css" %}
 
-.manual-payment-info code {
-	background: #f0f4f7;
-	padding: 8px 12px;
-	border-radius: 4px;
-	display: inline-block;
-	margin: 5px 0;
-}
+  .manual-payment-info {
+    margin: 25px 0;
+  }
+
+  .manual-payment-info h4 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .payment-amount-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    height: 82px;
+  }
+
+  .amount-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .amount-value {
+    color: white;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    height: 30px;
+  }
+
+  .amount-value .currency {
+    font-size: 18px;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-left: 5px;
+  }
+
+  .authorization-code-card {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 25px;
+    padding-right: 25px;
+    border-radius: 12px;
+    border: 2px solid #e1e8ed;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 15px;
+  }
+
+  .code-header svg {
+    color: #667eea;
+  }
+
+  .code-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    padding: 18px 20px;
+    border-radius: 10px;
+    border: 2px dashed #cbd5e0;
+    margin-bottom: 12px;
+  }
+
+  .code-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2490ef;
+    letter-spacing: 3px;
+    font-family: 'Courier New', monospace;
+  }
+
+  .copy-btn {
+    background: #667eea;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .copy-btn svg {
+    color: white;
+  }
+
+  .copy-btn:hover {
+    background: #5568d3;
+    transform: scale(1.05);
+  }
+
+  .copy-btn:active {
+    transform: scale(0.95);
+  }
+
+  .code-hint {
+    color: #718096;
+    font-size: 12px;
+    margin: 0;
+    text-align: center;
+  }
+
+  .user-codes-section {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .codes-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #2d3748;
+    margin-bottom: 15px;
+    font-size: 15px;
+  }
+
+  .codes-header svg {
+    color: #667eea;
+  }
+
+  .codes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .code-item {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+  }
+
+  .code-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  }
+
+  .code-item-code {
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: #2d3748;
+    letter-spacing: 1px;
+  }
+
+  .code-item-details {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .badge-free {
+    background: #48bb78;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .code-amount {
+    color: #2d3748;
+    font-weight: 600;
+  }
+
+  .code-remaining {
+    color: #718096;
+    font-size: 12px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+
+  .form-group label svg {
+    color: #667eea;
+  }
+
+  .input-with-icon {
+    position: relative;
+  }
+
+  .code-input {
+    width: 100%;
+    padding: 15px 50px 15px 20px;
+    font-size: 18px;
+    font-weight: 600;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-family: 'Courier New', monospace;
+  }
+
+  .code-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .input-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+  }
+
+  .input-hint {
+    display: block;
+    margin-top: 8px;
+    color: #718096;
+    font-size: 12px;
+  }
+
+  .btn-confirm {
+    width: 100%;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    height: 50px;
+  }
+
+  .btn-confirm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+  }
+
+  .btn-confirm:active {
+    transform: translateY(0);
+  }
+
+  .btn-confirm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-icon {
+    transition: transform 0.3s ease;
+  }
+
+  .btn-confirm:hover .btn-icon {
+    transform: translateX(3px);
+  }
+
+  .message-box {
+    margin-top: 15px;
+    padding: 15px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    display: none;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .error-box {
+    background: #fff5f5;
+    color: #c53030;
+    border: 1px solid #feb2b2;
+  }
+
+  .success-box {
+    background: #f0fff4;
+    color: #22543d;
+    border: 1px solid #9ae6b4;
+  }
+
+  @media (max-width: 768px) {
+    .amount-value {
+      font-size: 26px;
+    }
+
+    .code-value {
+      font-size: 22px;
+      letter-spacing: 2px;
+    }
+
+    .code-input {
+      font-size: 16px;
+      padding: 12px 45px 12px 15px;
+    }
+  }
 </style>
 
 <script>
-frappe.ready(function() {
-	const token = "{{ token }}";
-	const expectedCode = "{{ code }}";
-	const codeGatewayEnabled = {{ "true" if code_gateway_enabled else "false" }};
-	
-	// Auto-fill code only if not using code gateway or for testing
-	if (!codeGatewayEnabled && expectedCode) {
-		document.getElementById("payment-code").value = expectedCode;
-	}
-	
-	document.getElementById("confirm-payment").addEventListener("click", function() {
-		const enteredCode = document.getElementById("payment-code").value.toUpperCase().trim();
-		const errorDiv = document.getElementById("error-message");
-		const successDiv = document.getElementById("success-message");
-		
-		// Hide previous messages
-		errorDiv.style.display = "none";
-		successDiv.style.display = "none";
-		
-		if (!enteredCode) {
-			errorDiv.textContent = "{{ _('Please enter authorization code') }}";
-			errorDiv.style.display = "block";
-			return;
-		}
-		
-		// Disable button
-		this.disabled = true;
-		this.textContent = "{{ _('Processing...') }}";
-		
-		// Confirm payment
-		frappe.call({
-			method: "payments.templates.pages.manual_payment.confirm_manual_payment",
-			args: {
-				token: token,
-				code: enteredCode
-			},
-			callback: function(r) {
-				if (r.message && r.message.success) {
-					successDiv.textContent = r.message.message || "{{ _('Payment confirmed successfully! Redirecting...') }}";
-					successDiv.style.display = "block";
-					
-					// Redirect after short delay
-					setTimeout(function() {
-						window.location.href = r.message.redirect;
-					}, 1000);
-				} else {
-					errorDiv.textContent = r.message.message || "{{ _('Payment confirmation failed') }}";
-					errorDiv.style.display = "block";
-					document.getElementById("confirm-payment").disabled = false;
-					document.getElementById("confirm-payment").textContent = "{{ _('Confirm Payment') }}";
-				}
-			},
-			error: function(r) {
-				errorDiv.textContent = r.message && r.message.message 
-					? r.message.message 
-					: "{{ _('An error occurred. Please try again.') }}";
-				errorDiv.style.display = "block";
-				document.getElementById("confirm-payment").disabled = false;
-				document.getElementById("confirm-payment").textContent = "{{ _('Confirm Payment') }}";
-			}
-		});
-	});
-	
-	// Allow Enter key to submit
-	document.getElementById("payment-code").addEventListener("keypress", function(e) {
-		if (e.key === "Enter") {
-			document.getElementById("confirm-payment").click();
-		}
-	});
-});
+  function copyCode(code) {
+    navigator.clipboard.writeText(code).then(function() {
+      const btn = event.currentTarget;
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      btn.style.background = '#48bb78';
+
+      setTimeout(function() {
+        btn.innerHTML = originalHTML;
+        btn.style.background = '#667eea';
+      }, 2000);
+    });
+  }
+
+  frappe.ready(function() {
+    const token = "{{ token }}";
+    const expectedCode = "{{ code }}";
+    const codeGatewayEnabled = {{ "true" if code_gateway_enabled else "false" }};
+
+    if (!codeGatewayEnabled && expectedCode) {
+      document.getElementById("payment-code").value = expectedCode;
+    }
+
+    document.getElementById("confirm-payment").addEventListener("click", function() {
+      const enteredCode = document.getElementById("payment-code").value.toUpperCase().trim();
+      const errorDiv = document.getElementById("error-message");
+      const successDiv = document.getElementById("success-message");
+
+      errorDiv.style.display = "none";
+      successDiv.style.display = "none";
+
+      if (!enteredCode) {
+        errorDiv.textContent = "{{ _('Please enter authorization code') }}";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      this.disabled = true;
+      this.querySelector('.btn-text').textContent = "{{ _('Processing...') }}";
+
+      frappe.call({
+        method: "payments.templates.pages.manual_payment.confirm_manual_payment",
+        args: {
+          token: token,
+          code: enteredCode
+        },
+        callback: function(r) {
+          if (r.message && r.message.success) {
+            successDiv.textContent = r.message.message || "{{ _('Payment confirmed successfully! Redirecting...') }}";
+            successDiv.style.display = "block";
+
+            setTimeout(function() {
+              window.location.href = r.message.redirect;
+            }, 1000);
+          } else {
+            errorDiv.textContent = r.message.message || "{{ _('Payment confirmation failed') }}";
+            errorDiv.style.display = "block";
+            const btn = document.getElementById("confirm-payment");
+            btn.disabled = false;
+            btn.querySelector('.btn-text').textContent = "{{ _('Confirm Payment') }}";
+          }
+        },
+        error: function(r) {
+          errorDiv.textContent = r.message && r.message.message
+            ? r.message.message
+            : "{{ _('An error occurred. Please try again.') }}";
+          errorDiv.style.display = "block";
+          const btn = document.getElementById("confirm-payment");
+          btn.disabled = false;
+          btn.querySelector('.btn-text').textContent = "{{ _('Confirm Payment') }}";
+        }
+      });
+    });
+
+    document.getElementById("payment-code").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        document.getElementById("confirm-payment").click();
+      }
+    });
+  });
 </script>
 
 {% endblock %}
