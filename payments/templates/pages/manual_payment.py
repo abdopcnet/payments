@@ -18,18 +18,20 @@ def get_context(context):
 
     # Get current user for code validation
     context.current_user = frappe.session.user
+    
+    context.code_gateway_enabled = False
+    context.user_codes = []
 
     # Check if Code Payment Gateways is enabled
     try:
-        # Check if any Code Payment Gateways records exist and are enabled
+        # Check if any enabled codes exist
         code_gateway_exists = frappe.db.exists(
             "Code Payment Gateways",
             {"enabled": 1}
         )
+        context.code_gateway_enabled = bool(code_gateway_exists)
 
         if code_gateway_exists:
-            context.code_gateway_enabled = True
-
             # Get user's available codes (with remaining amount > 0 or free codes)
             if context.current_user != "Guest":
                 context.user_codes = []
@@ -47,7 +49,10 @@ def get_context(context):
 
                 for code_doc in user_codes_list:
                     # Check if code has remaining amount or is a free code
-                    if code_doc.free_code or (code_doc.code_remaining_amount and float(code_doc.code_remaining_amount or 0) > 0):
+                    remaining = float(code_doc.code_remaining_amount or 0)
+                    is_valid = code_doc.free_code or remaining > 0
+                    
+                    if is_valid:
                         context.user_codes.append({
                             "code": code_doc.code,
                             "amount": code_doc.code_amount if not code_doc.free_code else 0,
@@ -57,9 +62,9 @@ def get_context(context):
             else:
                 context.user_codes = []
         else:
-            context.code_gateway_enabled = False
             context.user_codes = []
-    except Exception:
+    except Exception as e:
+        frappe.log_error(f"Error in manual_payment get_context: {str(e)}")
         context.code_gateway_enabled = False
         context.user_codes = []
 
@@ -127,7 +132,7 @@ def confirm_manual_payment(token, code):
             if remaining_amount <= 0:
                 return {
                     "success": False,
-                    "message": "This code has no remaining amount"
+                    "message": "This code has no remaining balance. Please contact administrator to get a new code."
                 }
 
             # Check if payment amount is within remaining limit
