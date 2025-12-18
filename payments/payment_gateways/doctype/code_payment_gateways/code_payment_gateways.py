@@ -14,6 +14,30 @@ class CodePaymentGateways(Document):
     supported_currencies = ("USD", "EUR", "GBP", "INR",
                             "AED", "SAR", "EGP")  # Add more as needed
 
+    def before_insert(self):
+        """Initialize remaining amount before inserting"""
+        if not self.free_code and self.code_amount:
+            self.code_remaining_amount = self.code_amount
+            self.code_used_amount = 0
+
+    def validate(self):
+        """Validate and set remaining amount"""
+        if not self.free_code and self.code_amount:
+            if self.is_new():
+                self.code_remaining_amount = self.code_amount
+                self.code_used_amount = 0
+            else:
+                if (not self.code_remaining_amount or self.code_remaining_amount == 0) and \
+                   (not self.code_used_amount or self.code_used_amount == 0):
+                    self.code_remaining_amount = self.code_amount
+                    self.code_used_amount = 0
+                if not self.code_used_amount:
+                    self.code_used_amount = 0
+        elif self.free_code:
+            self.code_amount = 0
+            self.code_remaining_amount = 0
+            self.code_used_amount = 0
+
     def on_update(self):
         """Create Payment Gateway record when Code Payment Gateways is enabled"""
         if self.enabled:
