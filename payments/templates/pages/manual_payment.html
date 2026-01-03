@@ -18,94 +18,47 @@
   <div class="manual-payment-form">
     {% if code_gateway_enabled %}
     <div class="user-codes-section">
-      <div class="codes-header">
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-        <strong>{{ _("Your Available Codes") }}</strong>
-      </div>
-      {% if user_codes %}
-      <div class="codes-list">
-        {% for user_code in user_codes %}
-        <div class="code-item" onclick="selectCode('{{ user_code.code }}')" style="cursor: pointer;">
-          <div class="code-item-code-wrapper">
-            <div class="code-item-code">{{ user_code.code }}</div>
-          </div>
-          <div class="code-item-details">
-            {% if user_code.free_code %}
-            <span class="badge badge-free">{{ _("Free Code") }}</span>
-            {% else %}
-            {% if user_code.remaining_amount is not none %}
-            <span class="code-remaining"
-              >{{ _("Remaining") }}: {{ user_code.remaining_amount }} {{
-              currency }}</span
-            >
-            {% endif %} {% endif %}
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="no-codes-message">
-        <p>{{ _("You don't have any available codes. Please contact administrator to get a new code.") }}</p>
-      </div>
-      {% endif %}
-    </div>
-    {% endif %}
-
-    <div class="form-group">
-      <label for="payment-code">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <polyline points="9 11 12 14 22 4"></polyline>
-          <path
-            d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
-          ></path>
-        </svg>
-        {{ _("Enter Authorization Code") }}
-      </label>
-      <div class="input-with-icon">
-        <input
-          type="text"
-          class="form-control code-input"
-          id="payment-code"
-          placeholder="{{ _('Enter code') }}"
-        />
-        <div class="input-icon">
+      <div class="form-group">
+        <label for="code-select">
           <svg
-            width="20"
-            height="20"
+            width="18"
+            height="18"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
           >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
           </svg>
+          <strong>{{ _("Your Available Codes") }}</strong>
+        </label>
+        {% if user_codes %}
+        <select id="code-select" class="code-select">
+          <option value="">{{ _("Select a code") }}</option>
+          {% for user_code in user_codes %}
+          <option value="{{ user_code.code }}" data-free="{{ user_code.free_code }}" data-remaining="{{ user_code.remaining_amount if user_code.remaining_amount is not none else '' }}">
+            {{ user_code.code }}
+            {% if user_code.free_code %}
+            - {{ _("Free Code") }}
+            {% else %}
+            {% if user_code.remaining_amount is not none %}
+            - {{ _("Remaining") }}: {{ user_code.remaining_amount }} {{ currency }}
+            {% endif %}
+            {% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <div class="no-codes-message">
+          <p>{{ _("You don't have any available codes. Please contact administrator to get a new code.") }}</p>
         </div>
+        {% endif %}
       </div>
-      {% if code_gateway_enabled %}
-      <small class="input-hint"
-        >{{ _("Enter the code assigned to your account") }}</small
-      >
-      {% endif %}
     </div>
+    {% endif %}
 
-    <button class="btn-confirm" id="confirm-payment">
+    <button class="btn-confirm" id="confirm-payment" disabled>
       <span class="btn-text">{{ _("Confirm Payment") }}</span>
       <svg
         class="btn-icon"
@@ -198,48 +151,54 @@
     color: #667eea;
   }
 
-  .codes-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .code-item {
-    background: white;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.2s ease;
-  }
-
-  .code-item:hover {
-    border-color: #667eea;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
-  }
-
-  .code-item-code-wrapper {
-    display: flex;
-    align-items: center;
-    flex: 1;
-  }
-
-  .code-item-code {
+  .code-select {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
     font-family: 'Courier New', monospace;
-    font-size: 16px;
-    font-weight: 700;
+    background-color: white;
     color: #2d3748;
-    letter-spacing: 1px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 12px;
+    padding-right: 40px;
+  }
+
+  .code-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .code-select:hover {
+    border-color: #667eea;
   }
 
 
-  .code-item-details {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
+
+  /* Style for the first option (placeholder)
+  .code-select option:first-child {
+    color: #718096;
+    font-style: italic;
+  } */
+
+  /* Style for selected option */
+  .code-select option:checked {
+    background-color: #f0f4ff;
+    color: #667eea;
+    font-weight: 600;
+  }
+
+  /* Hover state for options (limited browser support) */
+  .code-select option:hover {
+    background-color: #f0f4ff;
   }
 
   .badge-free {
@@ -272,12 +231,6 @@
     font-size: 13px;
   }
 
-  .code-item.selected {
-    border-color: #667eea;
-    background: #f0f4ff;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
-  }
-
   .form-group {
     margin-bottom: 15px;
   }
@@ -296,43 +249,6 @@
     color: #667eea;
   }
 
-  .input-with-icon {
-    position: relative;
-  }
-
-  .code-input {
-    width: 100%;
-    padding: 12px 45px 12px 15px;
-    font-size: 16px;
-    font-weight: 600;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-family: 'Courier New', monospace;
-  }
-
-  .code-input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  }
-
-  .input-icon {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #a0aec0;
-  }
-
-  .input-hint {
-    display: block;
-    margin-top: 8px;
-    color: #718096;
-    font-size: 12px;
-  }
 
   .btn-confirm {
     width: 100%;
@@ -414,44 +330,56 @@
       font-size: 26px;
     }
 
-    .code-input {
-      font-size: 16px;
-      padding: 12px 45px 12px 15px;
+    .code-select {
+      font-size: 15px;
+      padding: 10px 35px 10px 12px;
     }
   }
 </style>
 
 <script>
-  function selectCode(code) {
-    const codeInput = document.getElementById("payment-code");
-    codeInput.value = code;
-    codeInput.focus();
-    
-    document.querySelectorAll(".code-item").forEach(item => {
-      item.classList.remove("selected");
-    });
-    event.currentTarget.classList.add("selected");
-    
-    setTimeout(function() {
-      event.currentTarget.classList.remove("selected");
-    }, 2000);
-  }
-
-
   frappe.ready(function() {
     const token = "{{ token }}";
     const codeGatewayEnabled = {{ "true" if code_gateway_enabled else "false" }};
+    const codeSelect = document.getElementById("code-select");
+    const confirmBtn = document.getElementById("confirm-payment");
+    const errorDiv = document.getElementById("error-message");
+    const successDiv = document.getElementById("success-message");
 
-    document.getElementById("confirm-payment").addEventListener("click", function() {
-      const enteredCode = document.getElementById("payment-code").value.toUpperCase().trim();
-      const errorDiv = document.getElementById("error-message");
-      const successDiv = document.getElementById("success-message");
+    // Enable/disable confirm button based on code selection
+    if (codeSelect) {
+      codeSelect.addEventListener("change", function() {
+        const selectedCode = this.value.trim();
+        if (selectedCode) {
+          confirmBtn.disabled = false;
+        } else {
+          confirmBtn.disabled = true;
+        }
+      });
+    }
 
+    confirmBtn.addEventListener("click", function() {
+      if (!codeSelect || !codeSelect.value) {
+        errorDiv.textContent = "{{ _('Please select a code') }}";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      // Ensure code is converted to string (handle any type)
+      let codeValue = codeSelect.value;
+      if (codeValue === null || codeValue === undefined) {
+        errorDiv.textContent = "{{ _('Please select a code') }}";
+        errorDiv.style.display = "block";
+        return;
+      }
+      
+      // Convert to string explicitly
+      const selectedCode = String(codeValue).toUpperCase().trim();
       errorDiv.style.display = "none";
       successDiv.style.display = "none";
 
-      if (!enteredCode) {
-        errorDiv.textContent = "{{ _('Please enter authorization code') }}";
+      if (!selectedCode) {
+        errorDiv.textContent = "{{ _('Please select a code') }}";
         errorDiv.style.display = "block";
         return;
       }
@@ -462,8 +390,8 @@
       frappe.call({
         method: "payments.templates.pages.manual_payment.confirm_manual_payment",
         args: {
-          token: token,
-          code: enteredCode
+          token: String(token || ""),
+          code: selectedCode
         },
         callback: function(r) {
           if (r.message && r.message.success) {
@@ -476,9 +404,8 @@
           } else {
             errorDiv.textContent = r.message.message || "{{ _('Payment confirmation failed') }}";
             errorDiv.style.display = "block";
-            const btn = document.getElementById("confirm-payment");
-            btn.disabled = false;
-            btn.querySelector('.btn-text').textContent = "{{ _('Confirm Payment') }}";
+            confirmBtn.disabled = false;
+            confirmBtn.querySelector('.btn-text').textContent = "{{ _('Confirm Payment') }}";
           }
         },
         error: function(r) {
@@ -486,17 +413,10 @@
             ? r.message.message
             : "{{ _('An error occurred. Please try again.') }}";
           errorDiv.style.display = "block";
-          const btn = document.getElementById("confirm-payment");
-          btn.disabled = false;
-          btn.querySelector('.btn-text').textContent = "{{ _('Confirm Payment') }}";
+          confirmBtn.disabled = false;
+          confirmBtn.querySelector('.btn-text').textContent = "{{ _('Confirm Payment') }}";
         }
       });
-    });
-
-    document.getElementById("payment-code").addEventListener("keypress", function(e) {
-      if (e.key === "Enter") {
-        document.getElementById("confirm-payment").click();
-      }
     });
   });
 </script>
