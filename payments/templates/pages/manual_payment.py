@@ -82,6 +82,22 @@ def confirm_manual_payment(token, code):
     5. Payment amount is within allowed limit
     """
     try:
+        # Validate code parameter
+        if not code:
+            return {
+                "success": False,
+                "message": "Authorization code is required"
+            }
+        
+        # Code should already be a string from frontend
+        code = code.strip()
+        
+        if not code:
+            return {
+                "success": False,
+                "message": "Authorization code cannot be empty"
+            }
+
         # Get current user
         current_user = frappe.session.user
         if current_user == "Guest":
@@ -91,8 +107,30 @@ def confirm_manual_payment(token, code):
             }
 
         # Get payment request from token
-        integration_request = frappe.get_doc("Integration Request", token)
-        payment_data = frappe.parse_json(integration_request.data)
+        if not token:
+            return {
+                "success": False,
+                "message": "Payment token is required"
+            }
+        
+        try:
+            integration_request = frappe.get_doc("Integration Request", token)
+        except frappe.DoesNotExistError:
+            return {
+                "success": False,
+                "message": "Invalid payment token"
+            }
+        
+        # Parse payment data safely
+        try:
+            if integration_request.data:
+                payment_data = frappe.parse_json(integration_request.data)
+            else:
+                payment_data = {}
+        except (TypeError, ValueError) as e:
+            frappe.log_error(f"Error parsing payment data: {str(e)}")
+            payment_data = {}
+        
         payment_amount = float(payment_data.get("amount", 0))
 
         # Search for the code directly in Code Payment Gateways
@@ -181,15 +219,25 @@ def confirm_manual_payment(token, code):
             "message": "Payment confirmed successfully"
         }
 
-    except frappe.DoesNotExistError:
+    except frappe.DoesNotExistError as e:
+        frappe.log_error(
+            f"DoesNotExistError in confirm_manual_payment: {str(e)}")
         return {
             "success": False,
-            "message": "Invalid payment token"
+            "message": "Invalid payment token or code not found"
+        }
+    except ValueError as e:
+        frappe.log_error(
+            f"ValueError in confirm_manual_payment: {str(e)}")
+        return {
+            "success": False,
+            "message": "Invalid payment amount or code format"
         }
     except Exception as e:
+        error_msg = str(e)[:200] if len(str(e)) > 200 else str(e)
         frappe.log_error(
-            f"[manual_payment.py] confirm_manual_payment: {str(e)}")
+            f"Error in confirm_manual_payment: {error_msg}")
         return {
             "success": False,
-            "message": f"An error occurred: {str(e)}"
+            "message": "An error occurred while processing payment. Please try again."
         }
